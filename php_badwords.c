@@ -42,6 +42,7 @@ zend_function_entry badwords_functions[] = {
 	PHP_FE(badwords_compiler_append,	NULL)
 	PHP_FE(badwords_compiler_compile,	NULL)
 	PHP_FE(badwords_create,				NULL)
+	PHP_FE(badwords_match,				NULL)
 	PHP_FE(badwords_replace,			NULL)
 	PHP_FE(badwords_version,			NULL)
 	{NULL, NULL, NULL}	/* Must be the last line in badwords_functions[] */
@@ -246,7 +247,7 @@ PHP_FUNCTION(badwords_compiler_compile)
 }
 /* }}} */
 
-/* {{{ proto resource badwords_create(string filename, [string persistKey])
+/* {{{ proto resource badwords_create(string filename, [string persist_key])
  */
 PHP_FUNCTION(badwords_create)
 {
@@ -316,6 +317,32 @@ PHP_FUNCTION(badwords_create)
         le.ptr = mmi;
         if (zend_hash_update(&EG(persistent_list), persistkey, klen+1, (void*)&le, sizeof(list_entry), NULL) == SUCCESS)
 			mmi->refcount++;
+	}
+}
+/* }}} */
+
+/* {{{ proto string badwords_match(resource trie, string text)
+       proto string badwords_match(string trie, string text)
+ */
+PHP_FUNCTION(badwords_match)
+{
+	zval **trie;
+	char *text;
+	int  text_len;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "Zs", &trie, &text, &text_len) == FAILURE) {
+		return;
+	}
+	
+	if (Z_TYPE_PP(trie) == IS_STRING) {
+		bw_trie_match(*trie, return_value, text, text_len);
+	}
+	else if (Z_TYPE_PP(trie) == IS_RESOURCE) {
+		struct bw_trie_mmap_t *mmi;
+		zval trie_;
+		ZEND_FETCH_RESOURCE(mmi, struct bw_trie_mmap_t *, trie, -1, PHP_BADWORDS_TRIE_RES_NAME, le_badwords_trie);
+		ZVAL_STRINGL(&trie_, mmi->trie, mmi->mlen, 0);
+		bw_trie_match(&trie_, return_value, text, text_len);
 	}
 }
 /* }}} */

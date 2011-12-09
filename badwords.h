@@ -58,6 +58,7 @@ struct bw_node_t {
 	};
 };
 
+void bw_trie_match(zval *trie, zval *return_value, uint8_t *text, int c);
 void bw_trie_replace(zval *trie, zval *return_value, uint8_t *text, int c);
 
 #endif /* __BADWORDS_H_ */

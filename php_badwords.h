@@ -17,18 +17,21 @@
 
 /**
  * Compiler Example:
- *	$compiler = badwords_compiler_create(encoding, True);
+ *	$compiler = badwords_compiler_create(BADWORDS_ENCODING_UTF8, True);
  *  badwords_compiler_append($compiler, $word, $replace);
  *  badwords_compiler_append($compiler, array('a'=>'b', 'c'=>'d'));
  *  $badwords = badwords_compiler_compile($compiler);
  *  unset($compiler);
+ *
  * --
  * Badwords Example:
  *  $badwords = badwords_create($filename, $persistKey);
- *  badwords_replace($badwords, $text2);
+ *  badwords_match($badwords, $text);
+ *  badwords_replace($badwords, $text);
  *  unset($badwords);
  *  $badwords = badwords_create($filename);
- *  badwords_replace($badwords, $text);
+ *  badwords_match($badwords, $text2);
+ *  badwords_replace($badwords, $text2);
  *  unset($badwords);
  */
 
@@ -59,10 +62,11 @@ PHP_FUNCTION(badwords_compiler_create);
 PHP_FUNCTION(badwords_compiler_append);
 PHP_FUNCTION(badwords_compiler_compile);
 PHP_FUNCTION(badwords_create);
+PHP_FUNCTION(badwords_match);
 PHP_FUNCTION(badwords_replace);
 PHP_FUNCTION(badwords_version);
 
-#define PHP_BADWORDS_VERSION "1.0.3"
+#define PHP_BADWORDS_VERSION "1.1.0"
 
 struct bw_trie_mmap_t {
 	int32_t  refcount;
