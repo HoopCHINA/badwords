@@ -49,31 +49,31 @@ The second argument to `badwords_compiler_create()` controls the case-sensitivit
 
 >>> Multibyte Characters
 
-Badwords understands `US-ASCII`, `UTF-8` and `GBK`.
+Badwords understands US-ASCII, UTF-8 and GBK.
 
 Reference
 ---------
 
 >>> Encoding Consts
 
-* `const BADWORDS_ENCODING_UTF8`
-* `const BADWORDS_ENCODING_GBK`
+* const BADWORDS_ENCODING_UTF8
+* const BADWORDS_ENCODING_GBK
 
 >>> Badwords Compiler Functions
 
-* `resource badwords_compiler_create([encoding = BADWORDS_ENCODING_UTF8, [case_insensitive = False]]);`
-* `int badwords_compiler_append(resource compiler, string from, string to);`
-* `int badwords_compiler_append(resource compiler, array replace);`
-* `string badwords_compiler_compile(resource compiler);`
+* resource badwords_compiler_create([encoding = BADWORDS_ENCODING_UTF8, [case_insensitive = False]]);
+* int badwords_compiler_append(resource compiler, string from, string to);
+* int badwords_compiler_append(resource compiler, array replace);
+* string badwords_compiler_compile(resource compiler);
 
 >>> Badwords Functions
 
-* `resource badwords_create(string filename, [string php_persist_object_key]);`
-* `string badwords_match(resource trie, string text);`
-* `string badwords_match(string trie, string text);`
-* `string badwords_replace(resource trie, string text);`
-* `string badwords_replace(string trie, string text);`
-* `string badwords_version();`
+* resource badwords_create(string filename, [string php_persist_object_key]);
+* string badwords_match(resource trie, string text);
+* string badwords_match(string trie, string text);
+* string badwords_replace(resource trie, string text);
+* string badwords_replace(string trie, string text);
+* string badwords_version();
 
 Internals
 ---------
