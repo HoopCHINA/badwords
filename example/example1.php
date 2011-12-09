@@ -1,19 +1,9 @@
 <?php
-
-!function_exists('readover') && exit('Forbidden');
-
-// 后续增加的一些代码转换,所有楼层帖子、论坛签名档、日志页面都用到这个转换
-function convertPlus(&$message, &$postdate = 0)
-{
-    return ifconvert(&$message);
-}
-
-// 是否进行敏感关键字替换
-function ifconvert(&$message, $ifreplace=true)
+function do_convert(&$message)
 {
     if (!extension_loaded('badwords')) {
         global $replace;
-        isset($replace) || include(D_P.'data/bbscache/wordsfb.php');
+        isset($replace) || include(D_P.'data/cache/words.php');
         return strtr(&$message, &$replace);
     }
 
@@ -21,10 +11,10 @@ function ifconvert(&$message, $ifreplace=true)
     global $badwords;
 
     if (!isset($badwords)) {
-	$wordfile = D_P.'data/bbscache/wordsfb.php';
-	$triebin = '/dev/shm/com.hoopchina.bbs-wordsfb.bin';
-	$persistkey = 'badwords::com.hoopchina.bbs::wordsfb';
-		
+	$wordfile = D_P.'data/cache/words.php';
+	$triebin = '/dev/shm/words.bin';
+	$persistkey = 'badwords::words';
+	
 	$wmtime = filemtime($wordfile);
 	$tmtime = filemtime($triebin);
 
@@ -51,3 +41,5 @@ function ifconvert(&$message, $ifreplace=true)
 
     return badwords_replace($badwords, &$message);
 }
+
+$message = &do_convert(&$message);
