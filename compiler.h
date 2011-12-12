@@ -20,12 +20,12 @@
 #define BW_REPLACES_MAX  (BW_NODE_MAX * sizeof(struct bw_string_t))
 
 struct bw_trie_compiler_t {
-	uint8_t  trie_encoding;
+    uint8_t  trie_encoding;
     uint8_t  case_insensitive;
-	uint16_t node_count;
-	uint32_t replace_len;
-	struct bw_node_t nodes[BW_NODE_MAX];
-	uint8_t replaces[BW_REPLACES_MAX];
+    uint16_t node_count;
+    uint32_t replace_len;
+    struct bw_node_t nodes[BW_NODE_MAX];
+    uint8_t replaces[BW_REPLACES_MAX];
 };
 
 struct bw_trie_compiler_t *bw_trie_compiler_create(int encoding, int case_insensitive);

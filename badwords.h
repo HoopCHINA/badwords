@@ -22,40 +22,40 @@
 #define BW_WORD_MAX  255
 
 struct bw_string_t {
-	uint8_t len;
-	uint8_t byte[BW_WORD_MAX];
+    uint8_t len;
+    uint8_t byte[BW_WORD_MAX];
 };
 
 static inline void
 bw_string_cpy(struct bw_string_t *dest, uint8_t *src, int c)
 {
-	dest->len = c;
-	memcpy(dest->byte, src, c);
+    dest->len = c;
+    memcpy(dest->byte, src, c);
 }
 
 static inline int
 bw_string_siz(struct bw_string_t *bstr)
 {
-	return bstr->len + 1;
+    return bstr->len + 1;
 }
 
 struct bw_trie_header_t {
-	uint16_t magic_num;
-	uint16_t version;
+    uint16_t magic_num;
+    uint16_t version;
     uint8_t  trie_encoding;
     uint8_t  case_insensitive;
-	uint16_t node_count;
+    uint16_t node_count;
 };
 
 struct bw_node_t {
-	unsigned is_terminal : 1;
-	unsigned is_fragment : 1;
-	unsigned reserved : 6;
-	unsigned replace : 24;
-	union {
-		uint16_t next[256];
-		struct bw_string_t fragment;
-	};
+    unsigned is_terminal : 1;
+    unsigned is_fragment : 1;
+    unsigned reserved : 6;
+    unsigned replace : 24;
+    union {
+        uint16_t next[256];
+        struct bw_string_t fragment;
+    };
 };
 
 void bw_trie_match(zval *trie, zval *return_value, uint8_t *text, int c);

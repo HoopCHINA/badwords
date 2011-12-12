@@ -17,7 +17,7 @@
 
 /**
  * Compiler Example:
- *	$compiler = badwords_compiler_create(BADWORDS_ENCODING_UTF8, True);
+ *  $compiler = badwords_compiler_create(BADWORDS_ENCODING_UTF8, True);
  *  badwords_compiler_append($compiler, $word, $replace);
  *  badwords_compiler_append($compiler, array('a'=>'b', 'c'=>'d'));
  *  $badwords = badwords_compiler_compile($compiler);
@@ -69,15 +69,15 @@ PHP_FUNCTION(badwords_version);
 #define PHP_BADWORDS_VERSION "1.1.0"
 
 struct bw_trie_mmap_t {
-	int32_t  refcount;
-	dev_t    trie_dev;
-	ino_t    trie_ino;
-	time_t   trie_tim;
-	uint8_t *trie;
-	size_t   mlen;
+    int32_t  refcount;
+    dev_t    trie_dev;
+    ino_t    trie_ino;
+    time_t   trie_tim;
+    uint8_t *trie;
+    size_t   mlen;
 };
 
-#endif	/* PHP_BADWORDS_H */
+#endif  /* PHP_BADWORDS_H */
 
 /*
  * Local variables:

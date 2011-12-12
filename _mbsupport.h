@@ -32,7 +32,7 @@ bw_mb_strtolower_utf8(uint8_t *str, uint8_t *end)
 {
     while (str < end) {
         uint8_t ch = *str;
-	    if (ch < 0x80)
+        if (ch < 0x80)
             *str = tolower(ch);
         str++;
     }
