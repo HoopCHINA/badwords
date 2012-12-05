@@ -17,14 +17,16 @@ There are four steps to one-time doing a multiple-word-replacement with Badwords
 
 For example:
 
-    <?php
-    $compiler = badwords_compiler_create(BADWORDS_ENCODING_UTF8, True);
-    badwords_compiler_append($compiler, $word, $replace);
-    badwords_compiler_append($compiler, array('a'=>'b', 'c'=>'d'));
-    
-    $trie = badwords_compiler_compile($compiler);
-    badwords_match($trie, $text);
-    badwords_replace($trie, $text);
+```php
+<?php
+$compiler = badwords_compiler_create(BADWORDS_ENCODING_UTF8, True);
+badwords_compiler_append($compiler, $word, $replace);
+badwords_compiler_append($compiler, array('a'=>'b', 'c'=>'d'));
+
+$trie = badwords_compiler_compile($compiler);
+badwords_match($trie, $text);
+badwords_replace($trie, $text);
+```
 
 or you can persist the database and use later:
 
@@ -34,14 +36,16 @@ or you can persist the database and use later:
 
 For example:
 
-    <?php
-    // Persist
-    file_put_contents('/tmp/badwords-trie', &$trie);
-    
-    // mmap in
-    $trie = badwords_create('/tmp/badwords-trie', 'trie1');
-    badwords_match($trie, $text);
-    badwords_replace($trie, $text);
+```php
+<?php
+// Persist
+file_put_contents('/tmp/badwords-trie', &$trie);
+
+// mmap in
+$trie = badwords_create('/tmp/badwords-trie', 'trie1');
+badwords_match($trie, $text);
+badwords_replace($trie, $text);
+```
 
 >>> Case Sensitivity
 
