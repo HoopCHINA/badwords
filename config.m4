@@ -1,5 +1,5 @@
 dnl
-dnl $Id: config9.m4 303962 2011-08-09 15:48:23Z Wang Wenlin $
+dnl $Id: config9.m4 2011-08-09 15:48:23Z Wang Wenlin $
 dnl
 
 PHP_ARG_ENABLE(badwords, whether to enable badwords support,

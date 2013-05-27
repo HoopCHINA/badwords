@@ -66,7 +66,7 @@ PHP_FUNCTION(badwords_match);
 PHP_FUNCTION(badwords_replace);
 PHP_FUNCTION(badwords_version);
 
-#define PHP_BADWORDS_VERSION "1.1.0"
+#define PHP_BADWORDS_VERSION "1.1.1"
 
 struct bw_trie_mmap_t {
     int32_t  refcount;

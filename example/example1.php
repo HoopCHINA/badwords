@@ -87,5 +87,5 @@ function &do_detect(&$message)
     return badwords_match($badwords, $message);
 }
 
-$message =& do_convert(&$message);
-$xxword = do_detect(&$message);
+$message = do_convert($message);
+$xxword = do_detect($message);

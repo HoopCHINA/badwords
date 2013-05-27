@@ -17,6 +17,11 @@
 #endif
 
 #include "php.h"
+#include "ext/standard/php_string.h"
+#include "ext/standard/php_var.h"
+#include "ext/standard/php_smart_str.h"
+#include "ext/standard/info.h"
+
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -24,11 +29,8 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 
-#include "ext/standard/php_string.h"
-#include "ext/standard/php_var.h"
-#include "ext/standard/php_smart_str.h"
-#include "_mbsupport.h"
 #include "php_badwords.h"
+#include "_mbsupport.h"
 
 /* True global resources - no need for thread safety here */
 static int le_badwords_compiler, le_badwords_trie;
