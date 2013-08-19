@@ -76,10 +76,11 @@ bw_match_text(struct bw_trie_header_t *header, zval *return_value,
 
     smart_str_0(&result);
     
-    if (result.len)
-        RETVAL_STRINGL(result.c, result.len, 0)
-    else
-        RETURN_EMPTY_STRING()
+    if (result.len) {
+        RETURN_STRINGL(result.c, result.len, 0);
+    } else {
+        RETURN_EMPTY_STRING();
+    }
 }
 
 void
@@ -157,10 +158,11 @@ bw_replace_text(struct bw_trie_header_t *header, zval *return_value,
 
     smart_str_0(&result);
     
-    if (result.len)
-        RETVAL_STRINGL(result.c, result.len, 0)
-    else
-        RETURN_EMPTY_STRING()
+    if (result.len) {
+        RETURN_STRINGL(result.c, result.len, 0);
+    } else {
+        RETURN_EMPTY_STRING();
+    }
 }
 
 void
