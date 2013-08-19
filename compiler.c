@@ -120,6 +120,10 @@ bw_trie_compiler_add_bytes(struct bw_trie_compiler_t *compiler,
     struct bw_node_t *node = root;
     uint8_t *end = bytes + c;
 
+    /* Ignore empty string */
+    if (bytes == end) return 0;
+
+    /* Bytes adding */
     while (bytes < end) {
         if (node->is_fragment) {
             if ((end-bytes) == node->fragment.len
