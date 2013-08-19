@@ -159,13 +159,13 @@ PHP_FUNCTION(badwords_compiler_append)
     }
 
     if (ac == 2 && Z_TYPE_PP(from) != IS_ARRAY) {
-        php_error_docref(NULL TSRMLS_CC, E_WARNING, "The second argument is not an array");
+        php_error_docref(NULL TSRMLS_CC, E_WARNING, "The second argument is not an array when only 2 arguments");
         RETURN_FALSE;
     }
     
     ZEND_FETCH_RESOURCE(compiler, struct bw_trie_compiler_t *, &zcompiler, -1, PHP_BADWORDS_COMPILER_RES_NAME, le_badwords_compiler);
 
-    if (ac != 2) {
+    if (Z_TYPE_PP(from) != IS_ARRAY) {
         convert_to_string_ex(from);
         added = bw_trie_compiler_add_word(compiler, Z_STRVAL_PP(from), Z_STRLEN_PP(from), to, to_len);
         if (added >= 0) {
@@ -190,6 +190,7 @@ PHP_FUNCTION(badwords_compiler_append)
     while (zend_hash_get_current_data_ex(hash, (void **)&entry, &hpos) == SUCCESS) {
         /* KEY */
         keytype = zend_hash_get_current_key_ex(hash, &key, &key_len, &num_key, 0, &hpos);
+
         if (keytype == HASH_KEY_IS_LONG) {
             ZVAL_LONG(&ktmp, num_key);
             convert_to_string(&ktmp);
@@ -220,10 +221,12 @@ PHP_FUNCTION(badwords_compiler_append)
             zval_dtor(&ktmp);
 
         /* CHECK... */
-        if (added >= 0)
+        if (added > 0)
             total_added += added;
-        // else
-            // break;
+        /*
+        if (added < 0)
+            break;
+        */
 
         zend_hash_move_forward_ex(hash, &hpos);
     }
