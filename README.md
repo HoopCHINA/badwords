@@ -39,7 +39,7 @@ For example:
 ```php
 <?php
 // Persist
-file_put_contents('/tmp/badwords-trie', &$trie);
+file_put_contents('/tmp/badwords-trie', $trie);
 
 // mmap in
 $trie = badwords_create('/tmp/badwords-trie', 'trie1');

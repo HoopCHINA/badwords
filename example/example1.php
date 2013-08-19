@@ -54,8 +54,8 @@ function get_shared_badwords__() {
     return $badwords;
 }
 
-// convert words
-function do_convert($message)
+// Replace words
+function do_replace($message)
 {
     if (!function_exists('badwords_replace')) {
         global $replace;
@@ -68,8 +68,8 @@ function do_convert($message)
     return badwords_replace($badwords, $message);
 }
 
-// detect words
-function do_detect($message)
+// Match words
+function do_match($message)
 {
     if (!function_exists('badwords_match')) {
         global $replace;
@@ -87,5 +87,5 @@ function do_detect($message)
     return badwords_match($badwords, $message);
 }
 
-$message = do_convert($message);
-$xxword = do_detect($message);
+$message = do_replace($message);
+$xxword = do_match($message);
