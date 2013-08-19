@@ -1,15 +1,22 @@
 --TEST--
-Replacement, UTF-8, case-insensitive
+Do case-sensitive and case-insensitive match
 --SKIPIF--
-<?php if (!extension_loaded("boxwood")) print "skip"; ?>
+<?php if (!extension_loaded("badwords")) print "skip"; ?>
 --FILE--
 <?php 
-$r = boxwood_new(false);
-boxwood_add_text($r, "monkey");
-boxwood_add_text($r, "salad");
-boxwood_add_text($r, "ŚÄłäđ");
-$c = boxwood_replace_text($r, "My monkey ate some salad today and also some ŚÄłäđ and śäłäđ.","*");
-print $c;
+$r = badwords_compiler_create(BADWORDS_ENCODING_UTF8, False);
+$a = badwords_compiler_append($r, 'word', 'replace');
+$b = badwords_compiler_append($r, array('www'=>'xxx', 'ttt'=>'vvv'));
+$t = badwords_compiler_compile($r);
+$c = badwords_match($t, 'My WoRd with www to ttt.');
+
+$r2 = badwords_compiler_create(BADWORDS_ENCODING_UTF8, True);
+$a2 = badwords_compiler_append($r2, 'word', 'replace');
+$b2 = badwords_compiler_append($r2, array('www'=>'xxx', 'ttt'=>'vvv'));
+$t2 = badwords_compiler_compile($r2);
+$c2 = badwords_match($t2, 'My WoRd with www to ttt.');
+
+print "$c,$c2";
 ?>
 --EXPECT--
-My m***** ate some s**** today and also some Ś**** and ś****.
+www,WoRd

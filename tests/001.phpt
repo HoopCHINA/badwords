@@ -1,10 +1,10 @@
 --TEST--
-Check for boxwood presence
+Check for badwords presence
 --SKIPIF--
-<?php if (!extension_loaded("boxwood")) print "skip"; ?>
+<?php if (!extension_loaded("badwords")) print "skip"; ?>
 --FILE--
 <?php 
-echo "boxwood extension is available";
+echo "badwords extension is available";
 /*
 	you can add regression tests for your extension here
 
@@ -18,4 +18,4 @@ echo "boxwood extension is available";
 */
 ?>
 --EXPECT--
-boxwood extension is available
+badwords extension is available
