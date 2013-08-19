@@ -17,7 +17,7 @@
 define ('D_P', './');
 
 // Get shared badwords resource
-function _get_shared_badwords() {
+function get_shared_badwords__() {
     static $badwords;
 
     if (!empty($badwords)) {
@@ -25,7 +25,7 @@ function _get_shared_badwords() {
     }
 
     $wordfile = D_P.'data/cache/words.php';
-    $triebin = '/dev/shm/com.foo.bar-words.bin';
+    $triebin = '/tmp/com.foo.bar-words.bin';
     $persistkey = 'badwords::com.foo.bar::words';
 
     $wmtime = filemtime($wordfile);
@@ -37,7 +37,7 @@ function _get_shared_badwords() {
     	badwords_compiler_append($compiler, $replace);
     	unset($replace);
 
-    	$trie = &badwords_compiler_compile($compiler);
+    	$trie = badwords_compiler_compile($compiler);
     	unset($compiler);
 
     	if ($trie) {
@@ -55,7 +55,7 @@ function _get_shared_badwords() {
 }
 
 // convert words
-function &do_convert(&$message)
+function do_convert($message)
 {
     if (!function_exists('badwords_replace')) {
         global $replace;
@@ -64,12 +64,12 @@ function &do_convert(&$message)
     }
 
     /* -- USE BADWORDS EXTENSION -- */
-    $badwords = _get_shared_badwords();
+    $badwords = get_shared_badwords__();
     return badwords_replace($badwords, $message);
 }
 
 // detect words
-function &do_detect(&$message)
+function do_detect($message)
 {
     if (!function_exists('badwords_match')) {
         global $replace;
@@ -83,7 +83,7 @@ function &do_detect(&$message)
     }
 
     /* -- USE BADWORDS EXTENSION -- */
-    $badwords = _get_shared_badwords();
+    $badwords = get_shared_badwords__();
     return badwords_match($badwords, $message);
 }
 
