@@ -273,7 +273,7 @@ PHP_FUNCTION(badwords_create)
 
     if (persistkey) {
         struct bw_trie_mmap_t *existing_mmi;
-        list_entry *existing_mmi_le;
+        zend_rsrc_list_entry *existing_mmi_le;
 
         if (zend_hash_find(&EG(persistent_list), persistkey, klen+1, (void **)&existing_mmi_le) == SUCCESS) {
             existing_mmi = (struct bw_trie_mmap_t *) existing_mmi_le->ptr;
@@ -314,10 +314,10 @@ PHP_FUNCTION(badwords_create)
     ZEND_REGISTER_RESOURCE(return_value, mmi, le_badwords_trie);
 
     if (persistkey) {
-        list_entry le;
+        zend_rsrc_list_entry le;
         le.type = le_badwords_trie;
         le.ptr = mmi;
-        if (zend_hash_update(&EG(persistent_list), persistkey, klen+1, (void*)&le, sizeof(list_entry), NULL) == SUCCESS)
+        if (zend_hash_update(&EG(persistent_list), persistkey, klen+1, (void*)&le, sizeof(le), NULL) == SUCCESS)
             mmi->refcount++;
     }
 }
