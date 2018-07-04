@@ -24,16 +24,16 @@ function get_shared_badwords__() {
     	return $badwords;
     }
 
-    $wordfile = D_P.'data/cache/words.php';
-    $triebin = '/tmp/com.foo.bar-words.bin';
-    $persistkey = 'badwords::com.foo.bar::words';
+    $wordfile = D_P.'words.php';
+    $triebin = D_P.'com.foo.bar-words.bin';
+    $persistkey = 'badwords::com.foo.bar1::words';
 
     $wmtime = filemtime($wordfile);
     $tmtime = filemtime($triebin);
 
     if ($tmtime === FALSE || $tmtime !== $wmtime && mt_rand(0, 99) < 5) {
     	include($wordfile);
-    	$compiler = badwords_compiler_create(BADWORDS_ENCODING_GBK, True);
+    	$compiler = badwords_compiler_create(BADWORDS_ENCODING_UTF8, True);
     	badwords_compiler_append($compiler, $replace);
     	unset($replace);
 
@@ -45,6 +45,7 @@ function get_shared_badwords__() {
     	    file_put_contents($triebin_tmp, $trie);
     	    touch($triebin_tmp, $wmtime);
     	    rename($triebin_tmp, $triebin);
+            chmod($triebin, 0755);
     	    unset($trie);
     	}
     }
@@ -87,5 +88,8 @@ function do_match($message)
     return badwords_match($badwords, $message);
 }
 
-$message = do_replace($message);
-$xxword = do_match($message);
+$message = "近日特朗普将携希拉里一同访问中国，北京欢迎你！520~";
+$rlword = do_replace($message);
+$mtword = do_match($message);
+
+var_dump($rlword, $mtword);

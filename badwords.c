@@ -16,17 +16,15 @@
 #include "config.h"
 #endif
 
-#include "php.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "ext/standard/php_string.h"
-#include "ext/standard/php_var.h"
-#include "ext/standard/php_smart_str.h"
-#include "_mbsupport.h"
+#include "php57_include.h"
+
 #include "badwords.h"
+#include "_mbsupport.h"
 
 static void
 bw_match_text(struct bw_trie_header_t *header, zval *return_value,
@@ -34,9 +32,9 @@ bw_match_text(struct bw_trie_header_t *header, zval *return_value,
 {
     struct bw_node_t *root = (struct bw_node_t *)(header+1), *node, *gotnode;
     uint8_t *end = text_to_walk + c, *watch, *gotwatch;
-    uint8_t *_Rep_base = (uint8_t *)(root + header->node_count);
+    // uint8_t *_Rep_base = (uint8_t *)(root + header->node_count);
 
-    smart_str result = {0};
+    COM57_SMART_STRING_T result = {0};
 
     while (text_to_walk < end) {
         /* MATCH */
@@ -44,7 +42,8 @@ bw_match_text(struct bw_trie_header_t *header, zval *return_value,
             watch = text_to_walk;
             node = root;
             gotnode = NULL;
-            
+            gotwatch = NULL;
+
             do {
                 node = root + node->next[*watch];
                 if (node->is_fragment) {
@@ -63,8 +62,8 @@ bw_match_text(struct bw_trie_header_t *header, zval *return_value,
             }
             while (watch < end && node->next[*watch] != 0);
 
-            if (gotnode) {
-                smart_str_appendl(&result, text, (gotwatch - text_to_walk + 1));
+            if (gotnode && gotwatch) {
+                COM57_SMART_STRING_APPENDL(&result, text, (gotwatch - text_to_walk + 1));
                 break;
             }
         }
@@ -74,19 +73,22 @@ bw_match_text(struct bw_trie_header_t *header, zval *return_value,
         text_to_walk = watch;
     }
 
-    smart_str_0(&result);
+    COM57_SMART_STRING_0(&result);
     
     if (result.len) {
-        RETURN_STRINGL(result.c, result.len, 0);
+        // 统一PHP 5/7 接口(PHP 5有折损)
+        // COM57_RETURN_STRINGL(result.c, result.len, 0);
+        COM57_RETVAL_STRINGL(result.c, result.len, 1);
+        COM57_SMART_STRING_FREE(&result);
     } else {
         RETURN_EMPTY_STRING();
     }
 }
 
 void
-bw_trie_match(zval *trie, zval *return_value, uint8_t *text, int c)
+bw_trie_match(char *trie, zval *return_value, uint8_t *text, int c)
 {
-    struct bw_trie_header_t *header = (struct bw_trie_header_t *) Z_STRVAL_P(trie);
+    struct bw_trie_header_t *header = (struct bw_trie_header_t *)trie;
     
     if (header->magic_num != BW_TRIE_MAGIC
         || header->version != BW_TRIE_VERSION) RETURN_FALSE;
@@ -95,7 +97,7 @@ bw_trie_match(zval *trie, zval *return_value, uint8_t *text, int c)
         bw_match_text(header, return_value, text, text, c);
     }
     else {
-        uint8_t *text_to_walk = estrndup(text, c);
+        uint8_t *text_to_walk = (uint8_t *)estrndup((char *)text, c);
         if (!text_to_walk) {
             RETURN_FALSE;
         } else {
@@ -114,7 +116,7 @@ bw_replace_text(struct bw_trie_header_t *header, zval *return_value,
     uint8_t *end = text_to_walk + c, *watch, *gotwatch;
     uint8_t *_Rep_base = (uint8_t *)(root + header->node_count);
 
-    smart_str result = {0};
+    COM57_SMART_STRING_T result = {0};
 
     while (text_to_walk < end) {
         /* REPLACE */
@@ -122,7 +124,8 @@ bw_replace_text(struct bw_trie_header_t *header, zval *return_value,
             watch = text_to_walk;
             node = root;
             gotnode = NULL;
-            
+            gotwatch = NULL;
+
             do {
                 node = root + node->next[*watch];
                 if (node->is_fragment) {
@@ -141,9 +144,9 @@ bw_replace_text(struct bw_trie_header_t *header, zval *return_value,
             }
             while (watch < end && node->next[*watch] != 0);
 
-            if (gotnode) {
+            if (gotnode && gotwatch) {
                 struct bw_string_t *replace = (struct bw_string_t *)(_Rep_base + gotnode->replace);
-                smart_str_appendl(&result, replace->byte, replace->len);
+                COM57_SMART_STRING_APPENDL(&result, replace->byte, replace->len);
                 text += gotwatch - text_to_walk + 1;
                 text_to_walk = gotwatch + 1;
                 continue;
@@ -151,25 +154,28 @@ bw_replace_text(struct bw_trie_header_t *header, zval *return_value,
         }
         
         watch = bw_mb_skip_char(text_to_walk, end, header->trie_encoding);
-        smart_str_appendl(&result, text, watch-text_to_walk);
+        COM57_SMART_STRING_APPENDL(&result, text, watch-text_to_walk);
         text += watch - text_to_walk;
         text_to_walk = watch;
     }
 
-    smart_str_0(&result);
+    COM57_SMART_STRING_0(&result);
     
     if (result.len) {
-        RETURN_STRINGL(result.c, result.len, 0);
+        // 统一PHP 5/7 接口(PHP 5有折损)
+        // COM57_RETURN_STRINGL(result.c, result.len, 0);
+        COM57_RETVAL_STRINGL(result.c, result.len, 1);
+        COM57_SMART_STRING_FREE(&result);
     } else {
         RETURN_EMPTY_STRING();
     }
 }
 
 void
-bw_trie_replace(zval *trie, zval *return_value, uint8_t *text, int c)
+bw_trie_replace(char *trie, zval *return_value, uint8_t *text, int c)
 {
-    struct bw_trie_header_t *header = (struct bw_trie_header_t *) Z_STRVAL_P(trie);
-    
+    struct bw_trie_header_t *header = (struct bw_trie_header_t *)trie;
+
     if (header->magic_num != BW_TRIE_MAGIC
         || header->version != BW_TRIE_VERSION) RETURN_FALSE;
     
@@ -177,7 +183,7 @@ bw_trie_replace(zval *trie, zval *return_value, uint8_t *text, int c)
         bw_replace_text(header, return_value, text, text, c);
     }
     else {
-        uint8_t *text_to_walk = estrndup(text, c);
+        uint8_t *text_to_walk = (uint8_t *)estrndup((char *)text, c);
         if (!text_to_walk) {
             RETURN_FALSE;
         } else {
