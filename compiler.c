@@ -16,14 +16,13 @@
 #include "config.h"
 #endif
 
-#include "php.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "ext/standard/php_string.h"
-#include "ext/standard/php_var.h"
+#include "php57_include.h"
+
 #include "_mbsupport.h"
 #include "compiler.h"
 
@@ -184,6 +183,7 @@ bw_trie_compiler_compile(struct bw_trie_compiler_t *compiler, zval *return_value
     uint32_t rlen = compiler->replace_len;
     uint32_t tlen = hlen + nlen + rlen;
 
+    // zend malloc
     uint8_t *trie = emalloc(tlen);
 
     if (trie) {
@@ -197,10 +197,13 @@ bw_trie_compiler_compile(struct bw_trie_compiler_t *compiler, zval *return_value
         memcpy(trie+hlen, compiler->nodes, nlen);
         memcpy(trie+hlen+nlen, compiler->replaces, rlen);
         
-        RETURN_STRINGL(trie, tlen, 0);
+        // 统一PHP 5/7 接口(PHP 5有折损)
+        // COM57_RETURN_STRINGL((char *)trie, tlen, 0);
+        COM57_RETVAL_STRINGL((char *)trie, tlen, 1);
+        efree(trie);
+    } else {
+        RETURN_FALSE;
     }
-
-    RETURN_FALSE;
 }
 
 void bw_trie_compiler_free(struct bw_trie_compiler_t *compiler)

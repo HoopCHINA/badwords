@@ -16,12 +16,6 @@
 #include "config.h"
 #endif
 
-#include "php.h"
-#include "ext/standard/php_string.h"
-#include "ext/standard/php_var.h"
-#include "ext/standard/php_smart_str.h"
-#include "ext/standard/info.h"
-
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -29,8 +23,8 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 
-#include "php_badwords.h"
 #include "_mbsupport.h"
+#include "php_badwords.h"
 
 /* True global resources - no need for thread safety here */
 static int le_badwords_compiler, le_badwords_trie;
@@ -47,41 +41,64 @@ zend_function_entry badwords_functions[] = {
     PHP_FE(badwords_match,              NULL)
     PHP_FE(badwords_replace,            NULL)
     PHP_FE(badwords_version,            NULL)
-    {NULL, NULL, NULL}  /* Must be the last line in badwords_functions[] */
+    
+    // {NULL, NULL, NULL}  /* Must be the last line in badwords_functions[] */
+    PHP_FE_END
 };
 /* }}} */
 
 /* {{{ badwords_module_entry
  */
 zend_module_entry badwords_module_entry = {
-#if ZEND_MODULE_API_NO >= 20010901
+#if PHP_MAJOR_VERSION < 7
+#   if ZEND_MODULE_API_NO >= 20010901
+        STANDARD_MODULE_HEADER,
+#   endif
+#else
     STANDARD_MODULE_HEADER,
 #endif
     "badwords",
     badwords_functions,
     PHP_MINIT(badwords),
     PHP_MSHUTDOWN(badwords),
-    NULL,
-    NULL,
+    PHP_RINIT(badwords),
+    PHP_RSHUTDOWN(badwords),
     PHP_MINFO(badwords),
-#if ZEND_MODULE_API_NO >= 20010901
+#if PHP_MAJOR_VERSION < 7
+#   if ZEND_MODULE_API_NO >= 20010901
+        PHP_BADWORDS_VERSION,
+#   endif
+#else
     PHP_BADWORDS_VERSION,
 #endif
     STANDARD_MODULE_PROPERTIES
 };
 /* }}} */
 
-#ifdef COMPILE_DL_BADWORDS
-ZEND_GET_MODULE(badwords)
+// #ifdef COMPILE_DL_BADWORDS
+// ZEND_GET_MODULE(badwords)
+// #endif
+
+#if PHP_MAJOR_VERSION < 7
+#   ifdef COMPILE_DL_BADWORDS
+    ZEND_GET_MODULE(badwords)
+#   endif
+#else
+#   ifdef COMPILE_DL_BADWORDS
+#       ifdef ZTS
+            ZEND_TSRMLS_CACHE_DEFINE()
+#       endif
+    ZEND_GET_MODULE(badwords)
+#   endif
 #endif
 
-static void php_badwords_compiler_dtor(zend_rsrc_list_entry *rsrc TSRMLS_DC)
+static void php_badwords_compiler_dtor(COM57_ZEND_RESURCE_T *rsrc TSRMLS_DC)
 {
     struct bw_trie_compiler_t *compiler = (struct bw_trie_compiler_t *) rsrc->ptr;
     bw_trie_compiler_free(compiler);
 }
 
-static void php_badwords_trie_dtor(zend_rsrc_list_entry *rsrc TSRMLS_DC)
+static void php_badwords_trie_dtor(COM57_ZEND_RESURCE_T *rsrc TSRMLS_DC)
 {
     struct bw_trie_mmap_t *mmi = (struct bw_trie_mmap_t *) rsrc->ptr;
     if (mmi && --mmi->refcount <= 0) {
@@ -89,6 +106,27 @@ static void php_badwords_trie_dtor(zend_rsrc_list_entry *rsrc TSRMLS_DC)
         free(mmi);
     }
 }
+
+/* {{{ PHP_RINIT_FUNCTION
+ */
+PHP_RINIT_FUNCTION(badwords)
+{
+#if PHP_MAJOR_VERSION >= 7
+#   if defined(COMPILE_DL_BADWORDS) && defined(ZTS)
+    ZEND_TSRMLS_CACHE_UPDATE();
+#   endif
+#endif
+    return SUCCESS;
+}
+/* }}} */
+
+/* {{{ PHP_RSHUTDOWN_FUNCTION
+ */
+PHP_RSHUTDOWN_FUNCTION(badwords)
+{
+    return SUCCESS;
+}
+/* }}} */
 
 /* {{{ PHP_MINIT_FUNCTION
  */
@@ -119,6 +157,9 @@ PHP_MINFO_FUNCTION(badwords)
     php_info_print_table_start();
     php_info_print_table_header(2, "badwords support", "enabled");
     php_info_print_table_row(2, "extension version", PHP_BADWORDS_VERSION);
+#if PHP_MAJOR_VERSION >= 7
+    php_info_print_table_row(2, "badwords copyright",   "Copyright (c) 2018 Hupu Inc. All Rights Reserved.");
+#endif    
     php_info_print_table_end();
 }
 /* }}} */
@@ -128,16 +169,18 @@ PHP_MINFO_FUNCTION(badwords)
 PHP_FUNCTION(badwords_compiler_create)
 {
     struct bw_trie_compiler_t *compiler;
-    int       trie_encoding  = BW_ENC_UTF8;
+    long      trie_encoding  = BW_ENC_UTF8;
     zend_bool case_sensitive = 0;
 
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|lb", &trie_encoding, &case_sensitive) == FAILURE) {
         return;
     }
 
-    compiler = bw_trie_compiler_create(trie_encoding, case_sensitive);
-    
-    ZEND_REGISTER_RESOURCE(return_value, compiler, le_badwords_compiler);
+    if (!(compiler = bw_trie_compiler_create(trie_encoding, case_sensitive))) {
+        return;
+    }
+
+    COM57_ZEND_REGISTER_RESOURCE(return_value, compiler, le_badwords_compiler);
 }
 /* }}} */
 
@@ -148,12 +191,13 @@ PHP_FUNCTION(badwords_compiler_append)
 {
     struct bw_trie_compiler_t *compiler;
     zval *zcompiler;
-    zval **from;
     char *to = NULL;
-    int   to_len = 0;
     int   ac = ZEND_NUM_ARGS();
     long  added, total_added = 0;
     
+#if PHP_MAJOR_VERSION < 7
+    zval **from;
+    int to_len = 0;
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "rZ|s", &zcompiler, &from, &to, &to_len) == FAILURE) {
         return;
     }
@@ -165,9 +209,11 @@ PHP_FUNCTION(badwords_compiler_append)
     
     ZEND_FETCH_RESOURCE(compiler, struct bw_trie_compiler_t *, &zcompiler, -1, PHP_BADWORDS_COMPILER_RES_NAME, le_badwords_compiler);
 
+    // 字符串 append
     if (Z_TYPE_PP(from) != IS_ARRAY) {
         convert_to_string_ex(from);
-        added = bw_trie_compiler_add_word(compiler, Z_STRVAL_PP(from), Z_STRLEN_PP(from), to, to_len);
+        added = bw_trie_compiler_add_word(compiler, (uint8_t *)Z_STRVAL_PP(from), Z_STRLEN_PP(from), (uint8_t *)to, to_len);
+        
         if (added >= 0) {
             RETURN_LONG(added);
         } else {
@@ -177,6 +223,38 @@ PHP_FUNCTION(badwords_compiler_append)
 
     /* HASH */
     HashTable *hash = HASH_OF(*from);
+#else
+    zval *from;
+    size_t to_len = 0;
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "rz|s", &zcompiler, &from, &to, &to_len) == FAILURE) {
+        return;
+    }
+
+    if (ac == 2 && Z_TYPE_P(from) != IS_ARRAY) {
+        php_error_docref(NULL TSRMLS_CC, E_WARNING, "The second argument is not an array when only 2 arguments");
+        RETURN_FALSE;
+    }
+    
+    compiler = (struct bw_trie_compiler_t *)zend_fetch_resource(Z_RES_P(zcompiler), PHP_BADWORDS_COMPILER_RES_NAME, le_badwords_compiler);
+
+    // 字符串 append
+    if (Z_TYPE_P(from) != IS_ARRAY) {
+        convert_to_string_ex(from);
+        added = bw_trie_compiler_add_word(compiler, (uint8_t *)Z_STRVAL_P(from), Z_STRLEN_P(from), (uint8_t *)to, to_len);
+        
+        if (added >= 0) {
+            RETURN_LONG(added);
+        } else {
+            RETURN_FALSE;
+        }
+    }
+
+    /* HASH */
+    HashTable *hash = HASH_OF(from);
+#endif    
+
+
+#if PHP_MAJOR_VERSION < 7
     HashPosition hpos;
     zval **entry;
     int   key_len, elen;
@@ -186,10 +264,9 @@ PHP_FUNCTION(badwords_compiler_append)
     zval  ktmp, etmp;
 
     zend_hash_internal_pointer_reset_ex(hash, &hpos);
-
     while (zend_hash_get_current_data_ex(hash, (void **)&entry, &hpos) == SUCCESS) {
         /* KEY */
-        keytype = zend_hash_get_current_key_ex(hash, &key, &key_len, &num_key, 0, &hpos);
+        keytype = zend_hash_get_current_key_ex(hash, &key, &key_len, (zend_ulong *)&num_key, 0, &hpos);
 
         if (keytype == HASH_KEY_IS_LONG) {
             ZVAL_LONG(&ktmp, num_key);
@@ -213,7 +290,7 @@ PHP_FUNCTION(badwords_compiler_append)
         }
 
         /* ADD... */
-        added = bw_trie_compiler_add_word(compiler, key, key_len, eval, elen);
+        added = bw_trie_compiler_add_word(compiler, (uint8_t *)key, key_len, (uint8_t *)eval, elen);
 
         if (Z_TYPE_PP(entry) != IS_STRING)
             zval_dtor(&etmp);
@@ -230,7 +307,54 @@ PHP_FUNCTION(badwords_compiler_append)
 
         zend_hash_move_forward_ex(hash, &hpos);
     }
-    
+#else
+    HashPosition hpos;
+    zval *entry;
+    zend_string *key, *eval;
+    zend_ulong num_key;
+    zval  ktmp, etmp;
+    int   keytype;
+
+    zend_hash_internal_pointer_reset_ex(hash, &hpos);
+    while ((entry = zend_hash_get_current_data_ex(hash, &hpos)) != SUCCESS) {
+        /* KEY */
+        keytype = zend_hash_get_current_key_ex(hash, &key, &num_key, &hpos);
+
+        if (keytype == HASH_KEY_IS_LONG) {
+            ZVAL_LONG(&ktmp, num_key);
+            convert_to_string(&ktmp);
+            key = Z_STR(ktmp);
+        }
+
+        /* VALUE */
+        if (Z_TYPE_P(entry) != IS_STRING) {
+            etmp = *entry;
+            zval_copy_ctor(&etmp);
+            convert_to_string(&etmp);
+            eval = Z_STR(etmp);
+        } else {
+            eval = Z_STR_P(entry);
+        }
+
+        /* ADD... */
+        added = bw_trie_compiler_add_word(compiler, (uint8_t *)ZSTR_VAL(key), ZSTR_LEN(key), (uint8_t *)ZSTR_VAL(eval), ZSTR_LEN(eval));
+
+        if (Z_TYPE_P(entry) != IS_STRING)
+            zval_dtor(&etmp);
+        if (keytype == HASH_KEY_IS_LONG)
+            zval_dtor(&ktmp);
+
+        /* CHECK... */
+        if (added > 0)
+            total_added += added;
+        /*
+        if (added < 0)
+            break;
+        */
+       
+        zend_hash_move_forward_ex(hash, &hpos);
+    }
+#endif
     RETURN_LONG(total_added);
 }
 /* }}} */
@@ -246,8 +370,8 @@ PHP_FUNCTION(badwords_compiler_compile)
         return;
     }
 
-    ZEND_FETCH_RESOURCE(compiler, struct bw_trie_compiler_t *, &zcompiler, -1, PHP_BADWORDS_COMPILER_RES_NAME, le_badwords_compiler);
-    
+    COM57_ZEND_FETCH_RESOURCE(compiler, struct bw_trie_compiler_t *, &zcompiler, -1, PHP_BADWORDS_COMPILER_RES_NAME, le_badwords_compiler);
+
     bw_trie_compiler_compile(compiler, return_value);
 }
 /* }}} */
@@ -257,7 +381,12 @@ PHP_FUNCTION(badwords_compiler_compile)
 PHP_FUNCTION(badwords_create)
 {
     char *filename, *persistkey = NULL;
+
+#if PHP_MAJOR_VERSION < 7
     int  flen, klen = 0;
+#else
+    size_t flen, klen = 0;
+#endif
 
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|s", &filename, &flen, &persistkey, &klen) == FAILURE) {
         return;
@@ -266,7 +395,7 @@ PHP_FUNCTION(badwords_create)
     int fd = open(filename, O_RDONLY);
     if (fd < 0) {
         if (persistkey) {
-            zend_hash_del(&EG(persistent_list), persistkey, klen+1);
+            COM57_ZEND_HASH_DEL(&EG(persistent_list), persistkey, klen+1);
         }
         RETURN_FALSE;
     }
@@ -276,9 +405,13 @@ PHP_FUNCTION(badwords_create)
 
     if (persistkey) {
         struct bw_trie_mmap_t *existing_mmi;
-        zend_rsrc_list_entry *existing_mmi_le;
+        COM57_ZEND_RESURCE_T *existing_mmi_le;
 
+#if PHP_MAJOR_VERSION < 7
         if (zend_hash_find(&EG(persistent_list), persistkey, klen+1, (void **)&existing_mmi_le) == SUCCESS) {
+#else
+        if ((existing_mmi_le = (COM57_ZEND_RESURCE_T *)zend_hash_str_find(&EG(persistent_list), persistkey, klen)) != NULL) {
+#endif
             existing_mmi = (struct bw_trie_mmap_t *) existing_mmi_le->ptr;
             if (existing_mmi->trie_tim == stat.st_mtime
                 && existing_mmi->trie_ino == stat.st_ino
@@ -286,10 +419,11 @@ PHP_FUNCTION(badwords_create)
                 && existing_mmi->mlen == stat.st_size) {
                 existing_mmi->refcount++;
                 close(fd);
-                ZEND_REGISTER_RESOURCE(return_value, existing_mmi, le_badwords_trie);
+
+                COM57_ZEND_REGISTER_RESOURCE(return_value, existing_mmi, le_badwords_trie);
                 return;
             } else {
-                zend_hash_del(&EG(persistent_list), persistkey, klen+1);
+                COM57_ZEND_HASH_DEL(&EG(persistent_list), persistkey, klen+1);
             }
         }
     }
@@ -314,13 +448,17 @@ PHP_FUNCTION(badwords_create)
     mmi->trie = addr;
     mmi->mlen = stat.st_size;
     
-    ZEND_REGISTER_RESOURCE(return_value, mmi, le_badwords_trie);
+    COM57_ZEND_REGISTER_RESOURCE(return_value, mmi, le_badwords_trie);
 
     if (persistkey) {
-        zend_rsrc_list_entry le;
+        COM57_ZEND_RESURCE_T le;
         le.type = le_badwords_trie;
         le.ptr = mmi;
-        if (zend_hash_update(&EG(persistent_list), persistkey, klen+1, (void*)&le, sizeof(le), NULL) == SUCCESS)
+#if PHP_MAJOR_VERSION < 7
+        if (COM57_ZEND_HASH_UPDATE(&EG(persistent_list), persistkey, klen+1, (void*)&le, sizeof(le), NULL) == SUCCESS)
+#else
+        if (COM57_ZEND_HASH_UPDATE(&EG(persistent_list), persistkey, klen+1, (zval *)&le, sizeof(le), NULL) == SUCCESS)
+#endif
             mmi->refcount++;
     }
 }
@@ -331,24 +469,43 @@ PHP_FUNCTION(badwords_create)
  */
 PHP_FUNCTION(badwords_match)
 {
-    zval **trie;
     char *text;
-    int  text_len;
 
+#if PHP_MAJOR_VERSION < 7
+    zval **trie;
+    int  text_len;
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "Zs", &trie, &text, &text_len) == FAILURE) {
         return;
     }
-    
+
     if (Z_TYPE_PP(trie) == IS_STRING) {
-        bw_trie_match(*trie, return_value, text, text_len);
+        bw_trie_match(Z_STRVAL_PP(trie), return_value, (uint8_t *)text, text_len);
     }
     else if (Z_TYPE_PP(trie) == IS_RESOURCE) {
         struct bw_trie_mmap_t *mmi;
-        zval trie_;
+        
         ZEND_FETCH_RESOURCE(mmi, struct bw_trie_mmap_t *, trie, -1, PHP_BADWORDS_TRIE_RES_NAME, le_badwords_trie);
-        ZVAL_STRINGL(&trie_, mmi->trie, mmi->mlen, 0);
-        bw_trie_match(&trie_, return_value, text, text_len);
+        
+        bw_trie_match((char *)mmi->trie, return_value, (uint8_t *)text, text_len);
     }
+#else
+    zval *trie;
+    size_t  text_len;
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "zs", &trie, &text, &text_len) == FAILURE) {
+        return;
+    }
+
+    if (Z_TYPE_P(trie) == IS_STRING) {
+        bw_trie_match(Z_STRVAL_P(trie), return_value, (uint8_t *)text, text_len);
+    }
+    else if (Z_TYPE_P(trie) == IS_RESOURCE) {
+        struct bw_trie_mmap_t *mmi;
+                
+        mmi = (struct bw_trie_mmap_t *)zend_fetch_resource(Z_RES_P(trie), PHP_BADWORDS_TRIE_RES_NAME, le_badwords_trie);
+
+        bw_trie_match((char *)mmi->trie, return_value, (uint8_t *)text, text_len);
+    }
+#endif
 }
 /* }}} */
 
@@ -357,24 +514,43 @@ PHP_FUNCTION(badwords_match)
  */
 PHP_FUNCTION(badwords_replace)
 {
-    zval **trie;
     char *text;
-    int  text_len;
 
+#if PHP_MAJOR_VERSION < 7
+    zval **trie;
+    int  text_len;
     if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "Zs", &trie, &text, &text_len) == FAILURE) {
         return;
     }
-    
+
     if (Z_TYPE_PP(trie) == IS_STRING) {
-        bw_trie_replace(*trie, return_value, text, text_len);
+        bw_trie_replace(Z_STRVAL_PP(trie), return_value, (uint8_t *)text, text_len);
     }
     else if (Z_TYPE_PP(trie) == IS_RESOURCE) {
         struct bw_trie_mmap_t *mmi;
-        zval trie_;
+
         ZEND_FETCH_RESOURCE(mmi, struct bw_trie_mmap_t *, trie, -1, PHP_BADWORDS_TRIE_RES_NAME, le_badwords_trie);
-        ZVAL_STRINGL(&trie_, mmi->trie, mmi->mlen, 0);
-        bw_trie_replace(&trie_, return_value, text, text_len);
+        
+        bw_trie_replace((char *)mmi->trie, return_value, (uint8_t *)text, text_len);
     }
+#else
+    zval *trie;
+    size_t  text_len;
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "zs", &trie, &text, &text_len) == FAILURE) {
+        return;
+    }
+
+    if (Z_TYPE_P(trie) == IS_STRING) {
+        bw_trie_replace(Z_STRVAL_P(trie), return_value, (uint8_t *)text, text_len);
+    }
+    else if (Z_TYPE_P(trie) == IS_RESOURCE) {
+        struct bw_trie_mmap_t *mmi;
+
+        mmi = (struct bw_trie_mmap_t *)zend_fetch_resource(Z_RES_P(trie), PHP_BADWORDS_TRIE_RES_NAME, le_badwords_trie);
+
+        bw_trie_replace((char *)mmi->trie, return_value, (uint8_t *)text, text_len);
+    }
+#endif
 }
 /* }}} */
 
@@ -382,7 +558,7 @@ PHP_FUNCTION(badwords_replace)
  */
 PHP_FUNCTION(badwords_version)
 {
-    RETURN_STRING(PHP_BADWORDS_VERSION, 1);
+    COM57_RETURN_STRING(PHP_BADWORDS_VERSION, 1);
 }
 /* }}} */
 

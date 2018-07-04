@@ -15,6 +15,12 @@
 #ifndef ___MBSUPPORT_H__
 #define ___MBSUPPORT_H__
 
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>  // C99
+
 #define BW_ENC_UTF8  0
 #define BW_ENC_GBK   1
 
@@ -85,4 +91,3 @@ bw_mb_strtolower(uint8_t *str, uint8_t *end, int encoding)
 }
 
 #endif /* ___MBSUPPORT_H__ */
-
